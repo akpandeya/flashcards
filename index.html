@@ -603,6 +603,11 @@
                 <button class="btn-ghost" onclick="document.getElementById('jsonInput').click()">Restore</button>
             </div>
 
+            <button class="btn-primary hidden" id="btn-install" onclick="app.installPWA()"
+                style="background: var(--success); color: #064e3b;">
+                <span>📲</span> Install App
+            </button>
+
             <button class="btn-danger-ghost" onclick="app.clearData()">Reset Application Data</button>
         </div>
     </div>
