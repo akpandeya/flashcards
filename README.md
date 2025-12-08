@@ -2,7 +2,7 @@
 
 **LingoFlow** is a premium, single-file Flashcard PWA (Progressive Web App) designed for mastering vocabulary with a beautiful, gesture-friendly interface.
 
-![LingoFlow Preview](https://via.placeholder.com/800x400.png?text=LingoFlow+Preview)
+![LingoFlow Preview]([https://via.placeholder.com/800x400.png?text=LingoFlow+Preview](https://akpandeya.github.io/flashcards/)
 
 ## 🚀 Features
 
