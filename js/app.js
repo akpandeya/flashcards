@@ -3,6 +3,7 @@
  */
 import * as Storage from './storage.js';
 import * as SRS from './srs.js';
+import * as Games from './games.js';
 
 let sessionQueue = [];
 let currentIndex = 0;
@@ -617,7 +618,11 @@ const app = {
     // Detail View
     openDetail, closeDetail, saveDetail,
     addDetailTag, removeDetailTag,
-    addDetailExample, removeDetailExample, updateDetailExample
+    addDetailExample, removeDetailExample, updateDetailExample,
+
+    // Games
+    startMemoryGame: Games.startMemoryGame,
+    endMemoryGame: Games.endMemoryGame
 };
 
 window.app = app;
