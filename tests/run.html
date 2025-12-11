@@ -52,6 +52,8 @@
     <!-- We use a single module entry point to ensure ordering -->
     <script type="module">
         import './srs.test.js';
+        import './parser.test.js';
+        import './state.test.js';
 
         // Run mocha after imports are resolved
         mocha.run();
