@@ -1,10 +1,13 @@
-const CACHE_NAME = 'lingoflow-v8'; // Increment version to force update
+const CACHE_NAME = 'lingoflow-v14'; // Increment version to force update
 const ASSETS = [
     '/',
     '/index.html',
     '/js/app.js',
     '/js/srs.js',
-    '/js/storage.js'
+    '/js/storage.js',
+    '/js/games.js',
+    '/js/dictionary.js',
+    '/data/vocabulary.csv'
 ];
 
 self.addEventListener('install', (e) => {

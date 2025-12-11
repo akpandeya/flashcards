@@ -4,6 +4,7 @@
 import * as Storage from './storage.js';
 import * as SRS from './srs.js';
 import * as Games from './games.js';
+import * as Dict from './dictionary.js';
 
 let sessionQueue = [];
 let currentIndex = 0;
@@ -287,12 +288,14 @@ let currentDetailId = null;
 let currentDetailTags = [];
 let currentDetailExamples = [];
 
-function openDetail(id) {
-    const db = Storage.getDB();
-    const word = db.words.find(w => w.id === id);
+// Global app object to expose functions to HTML
+
+
+// Renamed original openDetail to _openDetailInternal to avoid conflict with app.openDetail
+function _openDetailInternal(word) {
     if (!word) return;
 
-    currentDetailId = id;
+    currentDetailId = word.id;
 
     // Migrate/Init fields
     currentDetailTags = [...(word.tags || [])];
@@ -358,9 +361,9 @@ function renderDetailTags() {
         const el = document.createElement('div');
         el.className = 'chip';
         el.innerHTML = `
-            ${t} 
-            <span class="chip-del" onclick="app.removeDetailTag(${idx})">×</span>
-        `;
+            ${t}
+    <span class="chip-del" onclick="app.removeDetailTag(${idx})">×</span>
+    `;
         container.appendChild(el);
     });
 }
@@ -387,10 +390,10 @@ function renderDetailExamples() {
         const row = document.createElement('div');
         row.className = 'example-item';
         row.innerHTML = `
-            <div class="example-text" contenteditable="true" 
-                onblur="app.updateDetailExample(${idx}, this.innerText)">${ex}</div>
-            <button class="btn-mini del" onclick="app.removeDetailExample(${idx})">🗑</button>
-        `;
+        <div class="example-text" contenteditable="true"
+    onblur="app.updateDetailExample(${idx}, this.innerText)">${ex}</div>
+        <button class="btn-mini del" onclick="app.removeDetailExample(${idx})">🗑</button>
+    `;
         container.appendChild(row);
     });
 }
@@ -461,15 +464,15 @@ function renderList(query = "") {
             : '';
 
         el.innerHTML = `
-            <div class="li-main">
+        <div class="li-main">
                 <div class="li-word">${w.word} <span style="font-size:0.8rem; opacity:0.6; font-weight:400; margin-left:8px;">${w.pos}</span>${progBadge}</div>
                 <div class="li-def">${w.def}${tagHtml}</div>
             </div>
-            <div class="li-actions">
-                <button class="btn-mini" onclick="app.speakWord('${w.word}')" title="Pronounce">🔊</button>
-                <button class="btn-mini del" onclick="app.deleteWord('${w.id}')" title="Delete">🗑</button>
-            </div>
-        `;
+        <div class="li-actions">
+            <button class="btn-mini" onclick="app.speakWord('${w.word}')" title="Pronounce">🔊</button>
+            <button class="btn-mini del" onclick="app.deleteWord('${w.id}')" title="Delete">🗑</button>
+        </div>
+    `;
         container.appendChild(el);
     });
 }
@@ -595,30 +598,44 @@ function updateStreak() {
     }
 
     db.stats.lastReviewDate = Date.now();
-
-    // Manually save because we modified stats, not progress
     Storage.save();
     updateDashboard();
 }
 
+window.addEventListener('load', () => {
+    Storage.load();
+    Dict.initDictionary();
+    updateDashboard();
+});
 
 // EXPORT GLOBAL
 const app = {
     startSession, handleCSV, backup, handleRestore,
     clearData, flip, answer, speak, goHome,
-    openDictionary, search, deleteWord, speakWord,
+    search, deleteWord, speakWord: speak,
     fetchCentralVocabulary, installPWA,
-    // Expose constants for HTML usage if needed? 
-    // Better to have simple methods like answerAgain(), answerHard()...
-    answerAgain: () => answer(0), // Again
-    answerHard: () => answer(3),  // Hard
-    answerGood: () => answer(4),  // Good
-    answerEasy: () => answer(5),  // Easy
+
+    answerAgain: () => answer(0),
+    answerHard: () => answer(3),
+    answerGood: () => answer(4),
+    answerEasy: () => answer(5),
 
     // Detail View
-    openDetail, closeDetail, saveDetail,
+    openDetail: (id) => {
+        const db = Storage.getDB();
+        let card = db.words.find(w => w.id == id);
+        if (card) _openDetailInternal(card);
+    },
+    closeDetail, saveDetail,
     addDetailTag, removeDetailTag,
     addDetailExample, removeDetailExample, updateDetailExample,
+
+    // Dictionary
+    openDictionary: () => {
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('dictionary-screen').classList.remove('hidden');
+        Dict.loadDictionary();
+    },
 
     // Games
     startMemoryGame: Games.startMemoryGame,
@@ -630,3 +647,5 @@ const app = {
 };
 
 window.app = app;
+
+
