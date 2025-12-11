@@ -2,8 +2,8 @@ import { calculateNextState, Grades } from '../js/core/srs.js';
 
 describe('SM2 Algorithm (js/core/srs.js)', () => {
 
-    // Access chai lazily to ensure it loads
-    const expect = window.chai ? window.chai.expect : null;
+    // Access chai lazily to ensure it loads in browser, or use global in Node
+    const expect = (typeof window !== 'undefined' && window.chai) ? window.chai.expect : global.expect;
 
     before(function () {
         if (!window.chai) throw new Error("Chai not loaded");
