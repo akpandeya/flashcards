@@ -651,6 +651,40 @@
             color: var(--error);
         }
 
+        .level-selector-row {
+            display: flex;
+            flex-direction: row;
+            /* Force row */
+            flex-wrap: wrap;
+            /* Allow wrapping if needed, or nowrap for scroll */
+            gap: 12px;
+            /* Increased gap */
+            padding: 4px;
+            margin-bottom: 24px;
+            /* Increased margin */
+            align-items: center;
+        }
+
+        .level-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            /* Larger hit area */
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            /* Prevent squishing */
+        }
+
+        .level-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
         .input-bare {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1326,6 +1360,11 @@
             </div>
         </div>
 
+
+        <!-- Level Filter -->
+        <div id="level-filter-container" class="level-selector-row">
+            <!-- Buttons injected by JS -->
+        </div>
 
         <!-- Focus/Tag Input -->
         <div class="tag-input-container">

@@ -13,10 +13,12 @@ import * as Crossword from './games/crossword.js';
 
 // --- Global App Object (for HTML events) ---
 window.app = {
-    // Dashboard / Focus
-    handleFocusInput: Dashboard.handleFocusInput,
-    addFocusTag: Dashboard.addFocusTag,
-    removeFocusTag: Dashboard.removeFocusTag,
+    // Dashboard / Filter
+    handleTopicInput: Dashboard.handleTopicInput,
+    setLevel: (lvl) => {
+        store.setFilterLevel(lvl);
+        Dashboard.update();
+    },
 
     // Review Session
     startSession: () => {
@@ -103,13 +105,16 @@ Dashboard.init();
     // OR just fetch to update/merge silently?
     // Let's replicate old behavior: Fetch and merge.
     try {
-        const resp = await fetch('data/vocabulary.csv');
-        if (resp.ok) {
-            const text = await resp.text();
-            const words = Parser.parseCSV(text);
-            store.addWords(words);
-            Dashboard.refreshTagCache();
-        }
+        const files = ['data/a1_vocabulary.csv', 'data/a2_vocabulary.csv'];
+        await Promise.all(files.map(async (file) => {
+            const resp = await fetch(file);
+            if (resp.ok) {
+                const text = await resp.text();
+                const words = Parser.parseCSV(text);
+                store.addWords(words);
+            }
+        }));
+        Dashboard.refreshTagCache();
     } catch (e) {
         console.warn("Auto-fetch failed", e);
     }

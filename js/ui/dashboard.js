@@ -4,7 +4,7 @@
  */
 import { store } from '../state.js';
 
-let cachedTags = null; // Optimization cache for tags
+let cachedTags = null; // Optimization cache for tags (legacy check removal in progress)
 
 export function init() {
     // Initial render
@@ -13,8 +13,8 @@ export function init() {
     // Bind Listeners
     const input = document.getElementById('focus-input');
     if (input) {
-        input.addEventListener('input', (e) => handleFocusInput(e.target.value));
-        input.addEventListener('focus', (e) => handleFocusInput(e.target.value));
+        input.addEventListener('input', (e) => handleTopicInput(e.target.value));
+        input.addEventListener('focus', (e) => handleTopicInput(e.target.value));
 
         // Close dropdown on click outside
         document.addEventListener('click', (e) => {
@@ -24,109 +24,96 @@ export function init() {
             }
         });
     }
-
-    // Bind global events if needed, or return event handlers
-    // specific DOM elements are bound in app.js or here? 
-    // Ideally here if we move full ownership, but for now we export handlers.
 }
 
 export function update() {
     const state = store.state;
-    const total = state.words.length;
-    const filterTags = state.settings.activeFilter || [];
+    // We use filteredCards to drive the due count shown on the button
+    // But for the stats dashboard "Due" count (top left), do we use filter?
+    // Request says: "Start Session (23 Cards)" - implied filtered.
+    // Let's make the Top "Due" count also reflect the filter to be consistent.
 
-    // "Due" calculation based on SRS AND Filter
+    const filtered = store.filteredCards;
+    const totalFiltered = filtered.length;
+
+    // Logic: Of the filtered cards, how many are due or new?
     const now = Date.now();
-    const dueCount = state.words.filter(w => {
-        // Filter Check (OR Logic)
-        if (filterTags.length > 0) {
-            if (!w.tags) return false;
-            const hasTag = filterTags.some(t => w.tags.includes(t));
-            if (!hasTag) return false;
-        }
-
+    const dueCount = filtered.filter(w => {
         const p = state.progress[w.id];
-        if (!p) return true; // New words are due
+        if (!p) return true; // New
         return p.dueDate <= now;
     }).length;
 
-    // Update Focus UI
+    // Render Filters
+    renderLevelSelector();
     renderFocusWidget();
 
+    // Stats
     const dueEl = document.getElementById('due-val');
     if (dueEl) dueEl.innerText = dueCount;
 
-    // Progress: Known words (Repetition > 0)
+    // Progress (Global or Filtered? usually global progress is better for "Total Learned")
+    const totalDB = state.words.length;
     const learned = state.words.filter(w => state.progress[w.id] && state.progress[w.id].repetition > 0).length;
-    const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
+    const pct = totalDB > 0 ? Math.round((learned / totalDB) * 100) : 0;
 
     const progBar = document.getElementById('total-progress');
     if (progBar) progBar.style.width = `${pct}%`;
-
     const progText = document.getElementById('progress-text');
     if (progText) progText.innerText = `${pct}%`;
 
-    // Streak Logic
-    let displayStreak = state.stats.streak || 0;
-    if (state.stats.lastReviewDate) {
-        const last = new Date(state.stats.lastReviewDate);
-        last.setHours(0, 0, 0, 0);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const diff = (today - last) / (1000 * 60 * 60 * 24);
-
-        if (diff > 1) {
-            displayStreak = 0; // Streak broken
-        }
-    }
+    // Streak
     const streakEl = document.getElementById('streak-val');
-    if (streakEl) streakEl.innerText = displayStreak;
+    if (streakEl) streakEl.innerText = state.stats.streak || 0;
 
-    // Start Button state
-    updateStartButton(dueCount, total, filterTags);
+    // Start Button
+    updateStartButton(dueCount, totalFiltered, state.filter);
 }
 
-function updateStartButton(dueCount, total, filterTags) {
-    const btn = document.getElementById('btn-start');
-    if (!btn) return;
+function renderLevelSelector() {
+    const container = document.getElementById('level-filter-container');
+    if (!container) return;
 
-    if (dueCount === 0 && total > 0) {
-        btn.innerHTML = `<span>🎉</span> All Caught Up`;
-        btn.disabled = true;
-        btn.classList.add('finished');
-    } else if (total === 0) {
-        btn.disabled = true;
-        btn.innerHTML = `Add words to start`;
-    } else {
-        btn.disabled = false;
-        btn.classList.remove('finished');
-        if (filterTags.length > 0) {
-            const label = filterTags.length === 1 ? filterTags[0] : `${filterTags.length} Tags`;
-            btn.innerHTML = `<span>▶</span> Review '${label}'`;
-        } else {
-            btn.innerHTML = `<span>▶</span> Start Daily Session`;
-        }
-    }
+    // Available levels from DB (or hardcoded standard CEFR if empty DB)
+    let levels = store.availableLevels;
+    if (levels.length === 0) levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']; // Fallback
+
+    const current = store.filter.level;
+
+    let html = `<button class="level-btn ${current === null ? 'active' : ''}" onclick="window.app.setLevel(null)">All</button>`;
+
+    levels.forEach(lvl => {
+        const active = current === lvl ? 'active' : '';
+        // We need to expose a handler or use a global one.
+        // Let's assume window.app.setLevel is wired, or we construct elements.
+        // Using onclick string for simplicity with existing pattern, will wire in app.js
+        html += `<button class="level-btn ${active}" onclick="window.app.setLevel('${lvl}')">${lvl}</button>`;
+    });
+
+    container.innerHTML = html;
 }
 
 function renderFocusWidget() {
     const container = document.getElementById('active-tags-list');
     if (!container) return;
 
-    const activeTags = store.state.settings.activeFilter || [];
+    const activeTopics = store.filter.topics || [];
 
     container.innerHTML = '';
-    activeTags.forEach(t => {
+    activeTopics.forEach(t => {
         const chip = document.createElement('div');
         chip.className = 'tag-chip';
-        // We use a global/exported handler for removal
-        chip.innerHTML = `${t} <span data-tag="${t}" class="remove-tag">×</span>`;
-        chip.querySelector('.remove-tag').onclick = (e) => removeFocusTag(t);
+        chip.innerHTML = `${t} <span class="remove-tag">×</span>`;
+        chip.querySelector('.remove-tag').onclick = (e) => {
+            e.stopPropagation();
+            store.removeFilterTopic(t);
+            update();
+        };
         container.appendChild(chip);
     });
 }
 
-export function handleFocusInput(val) {
+export function handleTopicInput(val) {
     const dropdown = document.getElementById('focus-suggestions');
     if (!dropdown) return;
 
@@ -136,15 +123,11 @@ export function handleFocusInput(val) {
     }
 
     const q = val.toLowerCase();
+    const available = store.availableTopics; // Cached in Store getter technically (calc on fly)
+    const active = store.filter.topics;
 
-    // Refresh cache if needed (lazy load)
-    if (!cachedTags) refreshTagCache();
-
-    const activeTags = store.state.settings.activeFilter || [];
-
-    // Filter suggestions
-    const suggestions = cachedTags.filter(t =>
-        t.toLowerCase().includes(q) && !activeTags.includes(t)
+    const suggestions = available.filter(t =>
+        t.toLowerCase().includes(q) && !active.includes(t)
     ).slice(0, 50);
 
     if (suggestions.length === 0) {
@@ -157,41 +140,59 @@ export function handleFocusInput(val) {
         const div = document.createElement('div');
         div.className = 'tag-option';
         div.innerText = t;
-        div.onclick = () => addFocusTag(t);
+        div.onclick = () => {
+            store.addFilterTopic(t);
+
+            // Clear input
+            const input = document.getElementById('focus-input');
+            if (input) input.value = '';
+
+            dropdown.classList.add('hidden');
+            update();
+        };
         dropdown.appendChild(div);
     });
     dropdown.classList.remove('hidden');
 }
 
-export function addFocusTag(tag) {
-    let active = store.state.settings.activeFilter || [];
-    if (!active.includes(tag)) {
-        active.push(tag);
-        active = [...new Set(active)]; // Unique
-        store.updateSettings({ activeFilter: active });
+function updateStartButton(dueCount, totalFiltered, filter) {
+    const btn = document.getElementById('btn-start');
+    if (!btn) return;
 
-        // Clear input
-        const input = document.getElementById('focus-input');
-        if (input) input.value = '';
+    const activeFilter = filter.level || filter.topics.length > 0;
 
-        const dropdown = document.getElementById('focus-suggestions');
-        if (dropdown) dropdown.classList.add('hidden');
+    if (totalFiltered === 0) {
+        if (activeFilter) {
+            btn.innerHTML = `No cards match filter`;
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = `Add words to start`;
+            btn.disabled = true;
+        }
+        btn.classList.remove('finished');
+        return;
+    }
 
-        update(); // Re-render dashboard
+    // If caught up
+    if (dueCount === 0) {
+        if (activeFilter) {
+            btn.innerHTML = `<span>🎉</span> Filter Complete`;
+        } else {
+            btn.innerHTML = `<span>🎉</span> All Caught Up`;
+        }
+        btn.disabled = true; // OR allow review of "ahead" cards? For now disable.
+        btn.classList.add('finished');
+        return;
+    }
+
+    // Ready to study
+    btn.disabled = false;
+    btn.classList.remove('finished');
+    if (activeFilter) {
+        btn.innerHTML = `<span>▶</span> Review (${dueCount})`; // Show count of filtered due words
+    } else {
+        btn.innerHTML = `<span>▶</span> Start Daily Session`;
     }
 }
 
-export function removeFocusTag(tag) {
-    let active = store.state.settings.activeFilter || [];
-    active = active.filter(t => t !== tag);
-    store.updateSettings({ activeFilter: active });
-    update();
-}
 
-export function refreshTagCache() {
-    const tags = new Set();
-    store.state.words.forEach(w => {
-        if (w.tags) w.tags.forEach(t => tags.add(t));
-    });
-    cachedTags = Array.from(tags).sort();
-}

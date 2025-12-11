@@ -13,7 +13,8 @@ const ASSETS = [
     '/js/games/memory.js',
     '/js/games/raindrop.js',
     '/js/games/crossword.js',
-    '/data/vocabulary.csv'
+    '/data/a1_vocabulary.csv',
+    '/data/a2_vocabulary.csv',
 ];
 
 self.addEventListener('install', (e) => {
