@@ -13,7 +13,11 @@ const defaultState = {
         lastReviewDate: null
     },
     settings: {
-        activeFilter: [] // Array of tag strings
+        activeFilter: [] // Array of tag strings (Deprecating in favor of filter.topics)
+    },
+    filter: {
+        level: null, // 'A1', 'A2', etc.
+        topics: []   // ['Food', 'Travel']
     }
 };
 
@@ -39,6 +43,11 @@ class StateManager {
             // Migration: Ensure activeFilter is array
             if (this.state.settings.activeFilter && !Array.isArray(this.state.settings.activeFilter)) {
                 this.state.settings.activeFilter = [this.state.settings.activeFilter];
+            }
+
+            // Init filters if missing (new feature)
+            if (!this.state.filter) {
+                this.state.filter = { level: null, topics: [] };
             }
         }
     }
@@ -92,6 +101,73 @@ class StateManager {
     get progress() { return this.state.progress; }
     get settings() { return this.state.settings; }
     get stats() { return this.state.stats; }
+    get filter() { return this.state.filter; }
+
+    get filteredCards() {
+        return this.state.words.filter(w => {
+            // Level Check
+            if (this.state.filter.level) {
+                if (!w.tags || !w.tags.includes(this.state.filter.level)) return false;
+            }
+            // Topic Check (AND Logic)
+            if (this.state.filter.topics.length > 0) {
+                if (!w.tags) return false;
+                // Every selected topic must be present in word tags
+                const matchesAll = this.state.filter.topics.every(t => w.tags.includes(t));
+                if (!matchesAll) return false;
+            }
+            return true;
+        });
+    }
+
+    get availableLevels() {
+        const levelRegex = /^(A[12]|B[12]|C[12])$/;
+        const levels = new Set();
+        this.state.words.forEach(w => {
+            if (w.tags) w.tags.forEach(t => {
+                if (levelRegex.test(t)) levels.add(t);
+            });
+        });
+        return Array.from(levels).sort();
+    }
+
+    get availableTopics() {
+        const levelRegex = /^(A[12]|B[12]|C[12])$/;
+        const topics = new Set();
+        this.state.words.forEach(w => {
+            if (w.tags) w.tags.forEach(t => {
+                if (!levelRegex.test(t)) topics.add(t);
+            });
+        });
+        return Array.from(topics).sort();
+    }
+
+    // --- Filter Actions ---
+    setFilterLevel(level) {
+        this.state.filter.level = level;
+        // We generally don't persist filters permanently? Or should we?
+        // User requested UI, but typically session filters are ephemeral. 
+        // Let's persist them for now so they survive refresh (nice DX).
+        this.save();
+    }
+
+    addFilterTopic(topic) {
+        if (!this.state.filter.topics.includes(topic)) {
+            this.state.filter.topics.push(topic);
+            this.save();
+        }
+    }
+
+    removeFilterTopic(topic) {
+        this.state.filter.topics = this.state.filter.topics.filter(t => t !== topic);
+        this.save();
+    }
+
+    clearFilters() {
+        this.state.filter.level = null;
+        this.state.filter.topics = [];
+        this.save();
+    }
 }
 
 // Export Singleton
