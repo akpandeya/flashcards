@@ -558,6 +558,131 @@
             font-size: 1.2rem;
         }
 
+        /* DETAIL MODAL */
+        #detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #detail-modal.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--glass-shadow);
+            width: var(--card-w);
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 16px;
+            margin-bottom: 8px;
+        }
+
+        .modal-word {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .modal-def {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .chip {
+            background: rgba(129, 140, 248, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: default;
+        }
+
+        .chip-del {
+            cursor: pointer;
+            opacity: 0.6;
+            font-size: 1rem;
+        }
+
+        .chip-del:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        .input-bare {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        .input-bare:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .example-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .example-text {
+            flex: 1;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
         /* Utilities */
         .hidden {
             display: none !important;
@@ -698,6 +823,47 @@
                 onclick="event.stopPropagation(); app.answerGood()">Good</button>
             <button class="btn-review" style="background:#3b82f6; border:1px solid #2563eb;"
                 onclick="event.stopPropagation(); app.answerEasy()">Easy</button>
+        </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div id="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-word" id="detail-word">Word</div>
+                <div class="modal-def" id="detail-def">Definition</div>
+            </div>
+
+            <!-- EXAMPLES -->
+            <div>
+                <div class="section-title">Examples</div>
+                <div id="detail-examples-list"></div>
+                <button class="btn-ghost" style="padding: 8px; font-size: 0.85rem; width: 100%; margin-top: 8px;"
+                    onclick="app.addDetailExample()">
+                    + Add Example
+                </button>
+            </div>
+
+            <!-- TAGS -->
+            <div>
+                <div class="section-title">Tags</div>
+                <div class="chip-container" id="detail-tags"></div>
+                <input type="text" class="input-bare" id="detail-tag-input" placeholder="Type tag & hit Enter"
+                    onkeydown="if(event.key==='Enter') app.addDetailTag(this.value)">
+            </div>
+
+            <!-- NOTES -->
+            <div>
+                <div class="section-title">Notes</div>
+                <textarea class="input-bare" id="detail-notes" rows="4"
+                    placeholder="Add mnemonics or notes..."></textarea>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="display: flex; gap: 12px; margin-top: 10px;">
+                <button class="btn-ghost" style="flex:1;" onclick="app.closeDetail()">Cancel</button>
+                <button class="btn-primary" style="flex:1;" onclick="app.saveDetail()">Save Changes</button>
+            </div>
         </div>
     </div>
 
