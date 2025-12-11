@@ -1,12 +1,18 @@
-const CACHE_NAME = 'lingoflow-v16'; // Increment version to force update
+const CACHE_NAME = 'lingoflow-v17'; // Increment version to force update
 const ASSETS = [
     '/',
     '/index.html',
     '/js/app.js',
-    '/js/srs.js',
-    '/js/storage.js',
-    '/js/games.js',
-    '/js/dictionary.js',
+    '/js/state.js',
+    '/js/core/srs.js',
+    '/js/core/storage.js',
+    '/js/core/parser.js',
+    '/js/ui/dashboard.js',
+    '/js/ui/review.js',
+    '/js/ui/dictionary.js',
+    '/js/games/memory.js',
+    '/js/games/raindrop.js',
+    '/js/games/crossword.js',
     '/data/vocabulary.csv'
 ];
 
@@ -34,38 +40,39 @@ self.addEventListener('activate', (e) => {
     return self.clients.claim(); // Control all clients immediately
 });
 
-// Only handle HTTP/HTTPS
-if (!e.request.url.startsWith('http')) return;
+self.addEventListener('fetch', (e) => {
+    // Only handle HTTP/HTTPS
+    if (!e.request.url.startsWith('http')) return;
 
-// Ignore Cross-Origin (CDNs, etc)
-if (!e.request.url.startsWith(self.location.origin)) return;
+    // Ignore Cross-Origin (CDNs, etc)
+    if (!e.request.url.startsWith(self.location.origin)) return;
 
-// IGNORE /tests/ directory
+    // IGNORE /tests/ directory
 
-// IGNORE /tests/ directory
-if (e.request.url.includes('/tests/')) return;
+    // IGNORE /tests/ directory
+    if (e.request.url.includes('/tests/')) return;
 
-e.respondWith(
-    caches.match(e.request).then((cached) => {
-        // 1. Try Cache
-        if (cached) return cached;
+    e.respondWith(
+        caches.match(e.request).then((cached) => {
+            // 1. Try Cache
+            if (cached) return cached;
 
-        // 2. Network (and cache result)
-        return fetch(e.request).then((res) => {
-            // Determine if we should cache this response
-            // Cache everything that is successful
-            if (res && res.status === 200 && res.type === 'basic') {
-                const clone = res.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-            }
-            return res;
-        }).catch(() => {
-            // 3. Offline Fallback for Navigation
-            if (e.request.mode === 'navigate') {
-                return caches.match('/index.html')
-                    .then(r => r || caches.match('/'));
-            }
-        });
-    })
-);
+            // 2. Network (and cache result)
+            return fetch(e.request).then((res) => {
+                // Determine if we should cache this response
+                // Cache everything that is successful
+                if (res && res.status === 200 && res.type === 'basic') {
+                    const clone = res.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+                }
+                return res;
+            }).catch(() => {
+                // 3. Offline Fallback for Navigation
+                if (e.request.mode === 'navigate') {
+                    return caches.match('/index.html')
+                        .then(r => r || caches.match('/'));
+                }
+            });
+        })
+    );
 });
