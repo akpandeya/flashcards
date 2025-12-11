@@ -262,6 +262,134 @@ function fetchCentralVocabulary(manual = false) {
         });
 }
 
+// --- DETAIL MODAL LOGIC ---
+let currentDetailId = null;
+let currentDetailTags = [];
+let currentDetailExamples = [];
+
+function openDetail(id) {
+    const db = Storage.getDB();
+    const word = db.words.find(w => w.id === id);
+    if (!word) return;
+
+    currentDetailId = id;
+
+    // Migrate/Init fields
+    currentDetailTags = [...(word.tags || [])];
+    currentDetailExamples = word.examples ? [...word.examples] : [];
+
+    // Migration: If no specific examples array, but old fields exist, import them
+    if (currentDetailExamples.length === 0) {
+        if (word.ex_de) currentDetailExamples.push(word.ex_de);
+        // We could add English too, but usually examples are target language?
+        // Let's add them as separate lines if meaningful
+    }
+
+    // Populate UI
+    document.getElementById('detail-word').innerText = word.word;
+    document.getElementById('detail-def').innerText = word.def;
+    document.getElementById('detail-notes').value = word.notes || '';
+
+    renderDetailTags();
+    renderDetailExamples();
+
+    // Show
+    const m = document.getElementById('detail-modal');
+    m.classList.remove('hidden'); // Just in case
+    // Force reflow
+    void m.offsetWidth;
+    m.classList.add('visible');
+}
+
+function closeDetail() {
+    const m = document.getElementById('detail-modal');
+    m.classList.remove('visible');
+    currentDetailId = null;
+}
+
+function saveDetail() {
+    if (!currentDetailId) return;
+    const db = Storage.getDB();
+    const word = db.words.find(w => w.id === currentDetailId);
+    if (!word) return;
+
+    // Update
+    word.tags = [...currentDetailTags];
+    word.examples = [...currentDetailExamples]; // Store array of strings
+    word.notes = document.getElementById('detail-notes').value.trim();
+
+    // Persist
+    Storage.save();
+
+    // Refresh parent view
+    // updateDashboard() is global, maybe update dictionary list too?
+    const searchVal = document.querySelector('.search-bar') ? document.querySelector('.search-bar').value : '';
+    renderList(searchVal);
+    updateDashboard();
+
+    showToast("Changes saved!", '💾');
+    closeDetail();
+}
+
+function renderDetailTags() {
+    const container = document.getElementById('detail-tags');
+    container.innerHTML = '';
+    currentDetailTags.forEach((t, idx) => {
+        const el = document.createElement('div');
+        el.className = 'chip';
+        el.innerHTML = `
+            ${t} 
+            <span class="chip-del" onclick="app.removeDetailTag(${idx})">×</span>
+        `;
+        container.appendChild(el);
+    });
+}
+
+function addDetailTag(val) {
+    if (!val.trim()) return;
+    const clean = val.trim();
+    if (!currentDetailTags.includes(clean)) {
+        currentDetailTags.push(clean);
+        renderDetailTags();
+    }
+    document.getElementById('detail-tag-input').value = '';
+}
+
+function removeDetailTag(idx) {
+    currentDetailTags.splice(idx, 1);
+    renderDetailTags();
+}
+
+function renderDetailExamples() {
+    const container = document.getElementById('detail-examples-list');
+    container.innerHTML = '';
+    currentDetailExamples.forEach((ex, idx) => {
+        const row = document.createElement('div');
+        row.className = 'example-item';
+        row.innerHTML = `
+            <div class="example-text" contenteditable="true" 
+                onblur="app.updateDetailExample(${idx}, this.innerText)">${ex}</div>
+            <button class="btn-mini del" onclick="app.removeDetailExample(${idx})">🗑</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function addDetailExample() {
+    currentDetailExamples.push("New example...");
+    renderDetailExamples();
+}
+
+function updateDetailExample(idx, text) {
+    currentDetailExamples[idx] = text.trim();
+}
+
+function removeDetailExample(idx) {
+    currentDetailExamples.splice(idx, 1);
+    renderDetailExamples();
+}
+
+
 // --- DICTIONARY ---
 function openDictionary() {
     document.getElementById('dashboard').classList.add('hidden');
@@ -289,14 +417,23 @@ function renderList(query = "") {
     matches.slice(0, 100).forEach(w => {
         const el = document.createElement('div');
         el.className = 'list-item';
+        // Make whole item clickable to open detail
+        el.onclick = (e) => {
+            // Prevent if clicking action buttons
+            if (e.target.closest('button')) return;
+            openDetail(w.id);
+        };
+        el.style.cursor = "pointer";
 
         // Progress Info
         const p = db.progress[w.id];
         let progBadge = '';
         if (p) {
-            const nextDate = new Date(p.dueDate).toLocaleDateString();
+            const nextDate = new Date(p.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const rep = p.repetition;
             progBadge = `<span style="font-size:0.7rem; color:var(--success); border:1px solid var(--success); padding:2px 6px; border-radius:4px; margin-left:8px;">Lvl ${rep} • ${nextDate}</span>`;
+        } else {
+            progBadge = `<span style="font-size:0.7rem; color:var(--text-muted); border:1px solid rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px; margin-left:8px;">New</span>`;
         }
 
         const tagHtml = w.tags && w.tags.length > 0
@@ -422,7 +559,12 @@ const app = {
     answerAgain: () => answer(0), // Again
     answerHard: () => answer(3),  // Hard
     answerGood: () => answer(4),  // Good
-    answerEasy: () => answer(5)   // Easy
+    answerEasy: () => answer(5),  // Easy
+
+    // Detail View
+    openDetail, closeDetail, saveDetail,
+    addDetailTag, removeDetailTag,
+    addDetailExample, removeDetailExample, updateDetailExample
 };
 
 window.app = app;
