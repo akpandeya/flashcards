@@ -586,6 +586,13 @@
         </div>
 
         <div class="action-area">
+            <!-- Tag Filter -->
+            <div style="display:flex; gap:8px;">
+                <input list="tag-suggestions" id="tag-filter" placeholder="Filter by tag (optional)"
+                    style="flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:white; font-family:'Outfit';">
+                <datalist id="tag-suggestions"></datalist>
+            </div>
+
             <button class="btn-primary" id="btn-start" onclick="app.startSession()">
                 <span>▶</span> Start Learning
             </button>
@@ -602,6 +609,10 @@
                 <button class="btn-ghost" onclick="app.backup()">Backup</button>
                 <button class="btn-ghost" onclick="document.getElementById('jsonInput').click()">Restore</button>
             </div>
+
+            <button class="btn-ghost" onclick="app.fetchCentralVocabulary(true)" title="Fetch new words from file">
+                <span>🔄</span> Update Deck
+            </button>
 
             <button class="btn-primary hidden" id="btn-install" onclick="app.installPWA()"
                 style="background: var(--success); color: #064e3b;">
@@ -748,55 +759,117 @@
                     btn.disabled = false;
                     btn.innerHTML = `<span>▶</span> Review (${due})`;
                 }
+
+                // Update Tag Datalist
+                const tags = getUniqueTags();
+                const dl = document.getElementById('tag-suggestions');
+                dl.innerHTML = '';
+                tags.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    dl.appendChild(opt);
+                });
             }
 
-            // --- IMPORT / EXPORT ---
+            // --- IMPORT / EXPORT / SYNC ---
+
+            // Shared parser for both file upload and network fetch
+            function parseCSVData(text) {
+                const lines = text.split('\n');
+                let newWords = [];
+
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    const cols = line.split('|');
+                    // Spec requires up to 10 cols for Tags (index 10)
+                    // But forgiving length check: at least enough for word?
+                    // Let's stick to existing logic: require minimal cols, but be safe.
+                    if (cols.length < 1) return;
+
+                    const rawWord = cols[0];
+                    const cleanWord = rawWord.split('#')[0].trim();
+                    if (!cleanWord) return;
+
+                    const id = cleanWord; // German word as ID
+
+                    newWords.push({
+                        id: id,
+                        word: cleanWord,
+                        pos: cols[1] || 'Word',
+                        def: cols[5] || 'No definition',
+                        ex_de: cols[8] || '',
+                        ex_en: cols[9] || '',
+                        tags: cols[10] ? cols[10].split(',').map(t => t.trim()) : [] // New Tags column
+                    });
+                });
+                return newWords;
+            }
+
+            function mergeWords(newWords, notify = true) {
+                let added = 0;
+                const existing = new Set(db.words.map(w => w.id));
+
+                newWords.forEach(w => {
+                    if (!existing.has(w.id)) {
+                        db.words.push(w);
+                        existing.add(w.id);
+                        added++;
+                    }
+                });
+
+                if (added > 0) {
+                    save();
+                    if (notify) showToast(`Added ${added} new words!`, '📥');
+                } else {
+                    if (notify) showToast("No new words found.", 'Hz');
+                }
+            }
+
             function handleCSV(e) {
                 const file = e.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
                 reader.onload = (evt) => {
-                    const text = evt.target.result;
-                    const lines = text.split('\n');
-                    let added = 0;
-
-                    // existing IDs for O(1) lookup
-                    const existing = new Set(db.words.map(w => w.id));
-
-                    lines.forEach(line => {
-                        if (!line.trim()) return;
-                        const cols = line.split('|');
-                        // Expecting at least up to Col 9 based on spec (0..9)
-                        if (cols.length < 9) return;
-
-                        // Parse
-                        const rawWord = cols[0];
-                        const cleanWord = rawWord.split('#')[0].trim();
-                        if (!cleanWord) return;
-
-                        // ID strategy: use the German word itself (unique key)
-                        const id = cleanWord;
-
-                        if (!existing.has(id)) {
-                            db.words.push({
-                                id: id,
-                                word: cleanWord,
-                                pos: cols[1] || 'Word',
-                                def: cols[5] || 'No definition', // Col 5 based on user req
-                                ex_de: cols[8] || '',            // Col 8
-                                ex_en: cols[9] || ''             // Col 9
-                            });
-                            existing.add(id);
-                            added++;
-                        }
-                    });
-
-                    save();
-                    showToast(`Added ${added} new words!`, '📥');
+                    const words = parseCSVData(evt.target.result);
+                    mergeWords(words);
                     e.target.value = ''; // reset
                 };
                 reader.readAsText(file);
+            }
+
+            // New: Fetch from central CSV
+            function fetchCentralVocabulary(manual = false) {
+                // Determine if we should fetch. 
+                // If it's a manual click, yes.
+                // If it's auto-load, maybe we only want to do it once? 
+                // For now, let's just try to merge every time app loads to ensure updates.
+
+                fetch('data/vocabulary.csv')
+                    .then(response => {
+                        if (!response.ok) throw new Error("CSV not found");
+                        return response.text();
+                    })
+                    .then(text => {
+                        const words = parseCSVData(text);
+                        // If auto-load (not manual), maybe suppress "No new words" toast to be less annoying?
+                        // But user might want to know. Let's suppress "0 added" on auto-load.
+                        if (manual) {
+                            mergeWords(words, true);
+                        } else {
+                            // Let's manually do the merge logic here to control the toast perfectly?
+                            // Or improve mergeWords signature? 
+                            // Let's keep it simple: Auto-load -> notify=false (don't disturb user).
+                            // If significant update happens, maybe they should know? 
+                            // The prompt says "Check LocalStorage... If not, merge them".
+                            // Let's just seamlessly merge in background for auto-load.
+                            mergeWords(words, manual);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to load central vocabulary", err);
+                        if (manual) showToast("Update failed", '❌');
+                    });
             }
 
             function backup() {
@@ -845,14 +918,33 @@
             }
 
             // --- SESSION LOGIC ---
+            function getUniqueTags() {
+                const tags = new Set();
+                db.words.forEach(w => {
+                    if (w.tags) w.tags.forEach(t => tags.add(t));
+                });
+                return Array.from(tags).sort();
+            }
+
             function startSession() {
-                // Find unknown words
+                const tagFilter = document.getElementById('tag-filter').value.trim();
+
+                // Find unknown words, optionally filtered by tag
                 sessionQueue = db.words.filter(w => {
                     const p = db.progress[w.id];
-                    return !p || !p.known;
+                    const isDue = !p || !p.known;
+
+                    if (tagFilter) {
+                        return isDue && w.tags && w.tags.includes(tagFilter);
+                    }
+                    return isDue;
                 });
 
-                if (sessionQueue.length === 0) return;
+                if (sessionQueue.length === 0) {
+                    if (tagFilter) showToast(`No due words for tag: ${tagFilter}`, '∅');
+                    else showToast("No words to review!", '✅');
+                    return;
+                }
 
                 // Shuffle
                 for (let i = sessionQueue.length - 1; i > 0; i--) {
@@ -949,10 +1041,14 @@
                 matches.forEach(w => {
                     const el = document.createElement('div');
                     el.className = 'list-item';
+                    const tagHtml = w.tags && w.tags.length > 0
+                        ? `<br><span style="font-size:0.75rem; color:var(--primary); opacity:0.8;">🏷 ${w.tags.join(', ')}</span>`
+                        : '';
+
                     el.innerHTML = `
                         <div class="li-main">
                             <div class="li-word">${w.word} <span style="font-size:0.8rem; opacity:0.6; font-weight:400; margin-left:8px;">${w.pos}</span></div>
-                            <div class="li-def">${w.def}</div>
+                            <div class="li-def">${w.def}${tagHtml}</div>
                         </div>
                         <div class="li-actions">
                             <button class="btn-mini" onclick="app.speakWord('${w.word}')" title="Pronounce">🔊</button>
@@ -1009,11 +1105,13 @@
 
             // Init
             load();
+            fetchCentralVocabulary(false); // Auto-fetch on load
 
             return {
                 startSession, handleCSV, backup, handleRestore,
                 clearData, flip, answer, speak, goHome,
-                openDictionary, search, deleteWord, speakWord, installPWA
+                openDictionary, search, deleteWord, speakWord, installPWA,
+                fetchCentralVocabulary // Expose for button
             };
         }();
 

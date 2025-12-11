@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lingoflow-v2'; // Increment version to force update
+const CACHE_NAME = 'lingoflow-v3'; // Increment version to force update
 const ASSETS = [
     '/',
     '/index.html',
