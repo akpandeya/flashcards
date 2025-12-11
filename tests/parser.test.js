@@ -2,7 +2,7 @@ import { parseCSV } from '../js/core/parser.js';
 
 describe('CSV Parser (js/core/parser.js)', () => {
 
-    const expect = window.chai ? window.chai.expect : null;
+    const expect = (typeof window !== 'undefined' && window.chai) ? window.chai.expect : global.expect;
 
     before(function () {
         if (!window.chai) throw new Error("Chai not loaded");

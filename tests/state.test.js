@@ -3,7 +3,7 @@ import * as Storage from '../js/core/storage.js';
 
 describe('State Manager (js/state.js)', () => {
 
-    const expect = window.chai ? window.chai.expect : null;
+    const expect = (typeof window !== 'undefined' && window.chai) ? window.chai.expect : global.expect;
 
     before(function () {
         if (!window.chai) throw new Error("Chai not loaded");

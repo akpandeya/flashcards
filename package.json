@@ -1,0 +1,16 @@
+{
+  "name": "lingoflow",
+  "version": "1.0.0",
+  "description": "Premium Flashcard App with Games",
+  "main": "js/app.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha tests/*.test.js --require tests/setup.js"
+  },
+  "devDependencies": {
+    "chai": "^5.0.0",
+    "jsdom": "^23.0.0",
+    "mocha": "^10.2.0",
+    "mock-local-storage": "^1.1.24"
+  }
+}
