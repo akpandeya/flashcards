@@ -278,6 +278,7 @@
             transform-style: preserve-3d;
             transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
             border-radius: 24px;
+            will-change: transform;
         }
 
         .card.flipped {
@@ -289,6 +290,7 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             border-radius: 24px;
             background: rgba(30, 41, 59, 0.95);
             /* Dark Slate */
@@ -305,7 +307,7 @@
 
         /* FRONT */
         .card-front {
-            z-index: 2;
+            transform: rotateY(0deg);
         }
 
         .word-display {
@@ -686,9 +688,16 @@
             </div>
         </div>
 
-        <div class="controls">
-            <button class="btn-review" onclick="app.answer(false)">Not Yet</button>
-            <button class="btn-know" onclick="app.answer(true)">I Know This</button>
+        <div class="controls" style="opacity: 0; transition: opacity 0.2s;">
+            <!-- SRS Buttons -->
+            <button class="btn-review" style="background:#ef4444; border:1px solid #b91c1c;"
+                onclick="event.stopPropagation(); app.answerAgain()">Again</button>
+            <button class="btn-review" style="background:#f59e0b; border:1px solid #d97706;"
+                onclick="event.stopPropagation(); app.answerHard()">Hard</button>
+            <button class="btn-review" style="background:#10b981; border:1px solid #059669;"
+                onclick="event.stopPropagation(); app.answerGood()">Good</button>
+            <button class="btn-review" style="background:#3b82f6; border:1px solid #2563eb;"
+                onclick="event.stopPropagation(); app.answerEasy()">Easy</button>
         </div>
     </div>
 
@@ -702,422 +711,8 @@
         <span id="toast-msg">Notification</span>
     </div>
 
+    <script type="module" src="js/app.js"></script>
     <script>
-        /**
-         * LingoFlow Core Logic
-         * Handles CSV parsing, Persistence, and Game Loop
-         */
-        const App = function () {
-            const STORAGE_KEY = 'lingoflow_db_v1';
-            let db = {
-                words: [],     // { id, word, pos, def, ex_de, ex_en }
-                progress: {}   // { [id]: { known: boolean, lastReview: number } }
-            };
-            let sessionQueue = [];
-            let currentIndex = 0;
-
-            // --- PERSISTENCE ---
-            function load() {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    try { db = JSON.parse(raw); } catch (e) { console.error("Corrupt DB", e); }
-                }
-                updateDashboard();
-            }
-
-            function save() {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-                updateDashboard();
-            }
-
-            // --- UI HELPERS ---
-            function showToast(msg, icon = '✨') {
-                const t = document.getElementById('toast');
-                document.getElementById('toast-msg').innerText = msg;
-                document.querySelector('.toast-icon').innerText = icon;
-                t.classList.add('visible');
-                setTimeout(() => t.classList.remove('visible'), 3000);
-            }
-
-            function updateDashboard() {
-                const total = db.words.length;
-                const known = Object.values(db.progress).filter(p => p.known).length;
-                const due = total - known;
-
-                document.getElementById('total-val').innerText = total;
-                document.getElementById('due-val').innerText = due;
-
-                const btn = document.getElementById('btn-start');
-                if (due === 0 && total > 0) {
-                    btn.disabled = true;
-                    btn.innerHTML = `<span>🎉</span> All Learned!`;
-                    btn.classList.add('finished');
-                } else if (total === 0) {
-                    btn.disabled = true;
-                    btn.innerHTML = `Add words to start`;
-                } else {
-                    btn.disabled = false;
-                    btn.innerHTML = `<span>▶</span> Review (${due})`;
-                }
-
-                // Update Tag Datalist
-                const tags = getUniqueTags();
-                const dl = document.getElementById('tag-suggestions');
-                dl.innerHTML = '';
-                tags.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    dl.appendChild(opt);
-                });
-            }
-
-            // --- IMPORT / EXPORT / SYNC ---
-
-            // Shared parser for both file upload and network fetch
-            function parseCSVData(text) {
-                const lines = text.split('\n');
-                let newWords = [];
-
-                lines.forEach(line => {
-                    if (!line.trim()) return;
-                    const cols = line.split('|');
-                    // Spec requires up to 10 cols for Tags (index 10)
-                    // But forgiving length check: at least enough for word?
-                    // Let's stick to existing logic: require minimal cols, but be safe.
-                    if (cols.length < 1) return;
-
-                    const rawWord = cols[0];
-                    const cleanWord = rawWord.split('#')[0].trim();
-                    if (!cleanWord) return;
-
-                    const id = cleanWord; // German word as ID
-
-                    newWords.push({
-                        id: id,
-                        word: cleanWord,
-                        pos: cols[1] || 'Word',
-                        def: cols[5] || 'No definition',
-                        ex_de: cols[8] || '',
-                        ex_en: cols[9] || '',
-                        tags: cols[10] ? cols[10].split(',').map(t => t.trim()) : [] // New Tags column
-                    });
-                });
-                return newWords;
-            }
-
-            function mergeWords(newWords, notify = true) {
-                let added = 0;
-                const existing = new Set(db.words.map(w => w.id));
-
-                newWords.forEach(w => {
-                    if (!existing.has(w.id)) {
-                        db.words.push(w);
-                        existing.add(w.id);
-                        added++;
-                    }
-                });
-
-                if (added > 0) {
-                    save();
-                    if (notify) showToast(`Added ${added} new words!`, '📥');
-                } else {
-                    if (notify) showToast("No new words found.", 'Hz');
-                }
-            }
-
-            function handleCSV(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const words = parseCSVData(evt.target.result);
-                    mergeWords(words);
-                    e.target.value = ''; // reset
-                };
-                reader.readAsText(file);
-            }
-
-            // New: Fetch from central CSV
-            function fetchCentralVocabulary(manual = false) {
-                // Determine if we should fetch. 
-                // If it's a manual click, yes.
-                // If it's auto-load, maybe we only want to do it once? 
-                // For now, let's just try to merge every time app loads to ensure updates.
-
-                fetch('data/vocabulary.csv')
-                    .then(response => {
-                        if (!response.ok) throw new Error("CSV not found");
-                        return response.text();
-                    })
-                    .then(text => {
-                        const words = parseCSVData(text);
-                        // If auto-load (not manual), maybe suppress "No new words" toast to be less annoying?
-                        // But user might want to know. Let's suppress "0 added" on auto-load.
-                        if (manual) {
-                            mergeWords(words, true);
-                        } else {
-                            // Let's manually do the merge logic here to control the toast perfectly?
-                            // Or improve mergeWords signature? 
-                            // Let's keep it simple: Auto-load -> notify=false (don't disturb user).
-                            // If significant update happens, maybe they should know? 
-                            // The prompt says "Check LocalStorage... If not, merge them".
-                            // Let's just seamlessly merge in background for auto-load.
-                            mergeWords(words, manual);
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Failed to load central vocabulary", err);
-                        if (manual) showToast("Update failed", '❌');
-                    });
-            }
-
-            function backup() {
-                const str = JSON.stringify(db);
-                const blob = new Blob([str], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `lingoflow_backup_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }
-
-            function handleRestore(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    try {
-                        const data = JSON.parse(evt.target.result);
-                        if (data.words && data.progress) {
-                            if (confirm("Replace current data with this backup?")) {
-                                db = data;
-                                save();
-                                showToast("Data restored!", '↺');
-                            }
-                        } else {
-                            alert("Invalid file format");
-                        }
-                    } catch (err) {
-                        alert("Error reading file");
-                    }
-                    e.target.value = '';
-                };
-                reader.readAsText(file);
-            }
-
-            function clearData() {
-                if (confirm("⚠ Are you sure you want to delete all words and progress?")) {
-                    localStorage.removeItem(STORAGE_KEY);
-                    db = { words: [], progress: {} };
-                    updateDashboard();
-                    showToast("Database wiped", '🗑');
-                }
-            }
-
-            // --- SESSION LOGIC ---
-            function getUniqueTags() {
-                const tags = new Set();
-                db.words.forEach(w => {
-                    if (w.tags) w.tags.forEach(t => tags.add(t));
-                });
-                return Array.from(tags).sort();
-            }
-
-            function startSession() {
-                const tagFilter = document.getElementById('tag-filter').value.trim();
-
-                // Find unknown words, optionally filtered by tag
-                sessionQueue = db.words.filter(w => {
-                    const p = db.progress[w.id];
-                    const isDue = !p || !p.known;
-
-                    if (tagFilter) {
-                        return isDue && w.tags && w.tags.includes(tagFilter);
-                    }
-                    return isDue;
-                });
-
-                if (sessionQueue.length === 0) {
-                    if (tagFilter) showToast(`No due words for tag: ${tagFilter}`, '∅');
-                    else showToast("No words to review!", '✅');
-                    return;
-                }
-
-                // Shuffle
-                for (let i = sessionQueue.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [sessionQueue[i], sessionQueue[j]] = [sessionQueue[j], sessionQueue[i]];
-                }
-
-                currentIndex = 0;
-                document.getElementById('dashboard').classList.add('hidden');
-                document.getElementById('review-screen').classList.remove('hidden');
-                renderCard();
-            }
-
-            function renderCard() {
-                if (currentIndex >= sessionQueue.length) {
-                    showToast("Session Complete!", '🏆');
-                    goHome();
-                    return;
-                }
-
-                const card = sessionQueue[currentIndex];
-                const cleanPos = (card.pos || '').split('#')[0]; // clean pos tags if any
-
-                // Reset Flip
-                document.getElementById('active-card').classList.remove('flipped');
-
-                // Populate
-                document.getElementById('card-word').innerText = card.word;
-                document.getElementById('card-pos').innerText = cleanPos;
-
-                // Back Side
-                document.getElementById('card-def').innerText = card.def;
-                document.getElementById('card-ex-de').innerText = card.ex_de;
-                document.getElementById('card-ex-en').innerText = card.ex_en;
-
-                // Progress
-                document.getElementById('progress-indicator').innerText =
-                    `${currentIndex + 1} / ${sessionQueue.length}`;
-            }
-
-            function flip() {
-                document.getElementById('active-card').classList.toggle('flipped');
-            }
-
-            function answer(known) {
-                const card = sessionQueue[currentIndex];
-
-                if (known) {
-                    db.progress[card.id] = { known: true, lastReview: Date.now() };
-                    save(); // Autosave progress
-                }
-
-                currentIndex++;
-                // Small delay to allow user to see feedback could be added, but instant is better for detailed implementation
-                setTimeout(() => renderCard(), 150);
-            }
-
-            function speak() {
-                const word = sessionQueue[currentIndex].word;
-                const ut = new SpeechSynthesisUtterance(word);
-                ut.lang = 'de-DE';
-                window.speechSynthesis.speak(ut);
-            }
-
-            function goHome() {
-                document.getElementById('review-screen').classList.add('hidden');
-                document.getElementById('dictionary-screen').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                updateDashboard();
-            }
-
-            // --- DICTIONARY ---
-            function openDictionary() {
-                document.getElementById('dashboard').classList.add('hidden');
-                document.getElementById('dictionary-screen').classList.remove('hidden');
-                renderList();
-            }
-
-            function renderList(query = "") {
-                const container = document.getElementById('word-list-container');
-                container.innerHTML = "";
-
-                const q = query.toLowerCase();
-                const matches = db.words.filter(w =>
-                    w.word.toLowerCase().includes(q) ||
-                    w.def.toLowerCase().includes(q)
-                );
-
-                if (matches.length === 0) {
-                    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">No words found</div>`;
-                    return;
-                }
-
-                matches.forEach(w => {
-                    const el = document.createElement('div');
-                    el.className = 'list-item';
-                    const tagHtml = w.tags && w.tags.length > 0
-                        ? `<br><span style="font-size:0.75rem; color:var(--primary); opacity:0.8;">🏷 ${w.tags.join(', ')}</span>`
-                        : '';
-
-                    el.innerHTML = `
-                        <div class="li-main">
-                            <div class="li-word">${w.word} <span style="font-size:0.8rem; opacity:0.6; font-weight:400; margin-left:8px;">${w.pos}</span></div>
-                            <div class="li-def">${w.def}${tagHtml}</div>
-                        </div>
-                        <div class="li-actions">
-                            <button class="btn-mini" onclick="app.speakWord('${w.word}')" title="Pronounce">🔊</button>
-                            <button class="btn-mini del" onclick="app.deleteWord('${w.id}')" title="Delete">🗑</button>
-                        </div>
-                    `;
-                    container.appendChild(el);
-                });
-            }
-
-            function search(val) {
-                renderList(val);
-            }
-
-            function deleteWord(id) {
-                if (!confirm("Delete this word permanently?")) return;
-
-                db.words = db.words.filter(w => w.id !== id);
-                delete db.progress[id];
-                save();
-
-                // Refresh list if visible
-                const searchVal = document.querySelector('.search-bar').value;
-                renderList(searchVal);
-                showToast("Word deleted", '🗑');
-            }
-
-            function speakWord(text) {
-                const ut = new SpeechSynthesisUtterance(text);
-                ut.lang = 'de-DE';
-                window.speechSynthesis.speak(ut);
-            }
-
-            // --- PWA INSTALLATION ---
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                const btn = document.getElementById('btn-install');
-                btn.classList.remove('hidden');
-                console.log("Install prompt captured");
-            });
-
-            function installPWA() {
-                if (!deferredPrompt) return;
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((result) => {
-                    if (result.outcome === 'accepted') {
-                        document.getElementById('btn-install').classList.add('hidden');
-                    }
-                    deferredPrompt = null;
-                });
-            }
-
-            // Init
-            load();
-            fetchCentralVocabulary(false); // Auto-fetch on load
-
-            return {
-                startSession, handleCSV, backup, handleRestore,
-                clearData, flip, answer, speak, goHome,
-                openDictionary, search, deleteWord, speakWord, installPWA,
-                fetchCentralVocabulary // Expose for button
-            };
-        }();
-
-        // Expose app to window for onclick handlers
-        window.app = App;
-
         // --- SERVICE WORKER REGISTRATION ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
