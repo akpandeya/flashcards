@@ -1700,20 +1700,35 @@
 
         /* --- DASHBOARD GRID (Desktop) --- */
         @media (min-width: 768px) {
+
+            /* Center Maximum Widths for Desktop Views - REMOVED CENTERING to Left Align */
+            #dashboard,
+            #library-screen,
+            #dictionary-screen,
+            #stats-screen {
+                width: 100%;
+                max-width: 1200px;
+                margin: 0;
+                /* Left align */
+            }
+
+            /* Specific Adjustment for Dashboard Grid */
             #dashboard {
                 display: grid;
-                grid-template-columns: 2fr 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto auto auto auto;
                 gap: 24px;
-                text-align: left;
-                width: 100%;
+                padding-bottom: 40px;
+                align-content: start;
             }
 
             /* Header (Streak) */
             .dash-header {
-                grid-column: 2;
+                grid-column: 1 / span 2;
                 grid-row: 1;
                 margin-bottom: 0 !important;
                 justify-content: flex-end;
+                text-align: left;
             }
 
             .dash-header>*:first-child,
@@ -1723,8 +1738,8 @@
 
             /* Stats (Progress) */
             .dash-stats {
-                grid-column: 1;
-                grid-row: 1;
+                grid-column: 1 / span 2;
+                grid-row: 2;
                 margin-bottom: 0 !important;
                 display: flex;
                 flex-direction: column;
@@ -1734,19 +1749,20 @@
             /* Deck Controls */
             #level-filter-container {
                 grid-column: 1;
-                grid-row: 2;
+                grid-row: 3;
                 margin-bottom: 0 !important;
             }
 
             .tag-input-container {
                 grid-column: 1;
-                grid-row: 3;
+                grid-row: 4;
             }
 
             /* Daily Goal */
             .hero-section {
                 grid-column: 2;
-                grid-row: 2 / span 2;
+                grid-row: 3 / span 2;
+                /* Spans level & tag rows */
                 height: 100%;
                 display: flex;
                 flex-direction: column;
@@ -1756,12 +1772,12 @@
             /* Arcade */
             .arcade-label {
                 grid-column: 1 / span 2;
-                grid-row: 4;
+                grid-row: 5;
             }
 
             .arcade-grid {
                 grid-column: 1 / span 2;
-                grid-row: 5;
+                grid-row: 6;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 16px;
@@ -1770,14 +1786,14 @@
             /* Footer */
             .footer-actions {
                 grid-column: 1 / span 2;
-                grid-row: 6;
-                justify-content: center;
+                grid-row: 7;
+                justify-content: flex-start;
+                /* Left align footer too */
             }
 
             /* DICTIONARY SPLIT VIEW (Desktop) */
             #dictionary-screen {
                 overflow: hidden !important;
-                /* Managed by panes */
             }
 
             #dict-left-pane,
@@ -1797,10 +1813,14 @@
                 display: flex;
                 flex-direction: row;
                 gap: 40px;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto;
+                align-items: flex-start;
+                /* Top align */
+                justify-content: flex-start;
+                /* Left align */
+                margin: 0;
                 height: 100%;
+                padding-top: 40px;
+                /* Add some top padding instead of center */
             }
 
             .scene {
