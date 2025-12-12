@@ -78,7 +78,7 @@ function onKeyDown(e) {
 
     if (e.code === 'Space') {
         e.preventDefault();
-        if (!isFlipped) flip();
+        flip();
     } else if (isFlipped) {
         if (['1', '2', '3', '4'].includes(e.key)) {
             answer(parseInt(e.key));
