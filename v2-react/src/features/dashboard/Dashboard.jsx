@@ -1,4 +1,3 @@
-```javascript
 import React, { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
@@ -31,11 +30,10 @@ export function Dashboard() {
                         <button
                             key={level}
                             onClick={() => setFilterLevel(level)}
-                            className={`px - 6 py - 3 rounded - xl font - bold transition - all ${
-    filter.level === level
-    ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
-    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-} `}
+                            className={`px-6 py-3 rounded-xl font-bold transition-all ${filter.level === level
+                                    ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
                         >
                             {level}
                         </button>
@@ -59,4 +57,3 @@ export function Dashboard() {
         </div>
     );
 }
-```
