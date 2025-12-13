@@ -46,7 +46,7 @@ export function ReviewSession() {
         // Flip back first
         setIsFlipped(false);
 
-        // Wait for flip animation (300ms) before changing content
+        // Wait for flip animation (500ms) + buffer before changing content
         setTimeout(() => {
             // Next Card
             if (currentIndex < queue.length - 1) {
@@ -54,7 +54,7 @@ export function ReviewSession() {
             } else {
                 setSessionComplete(true);
             }
-        }, 300);
+        }, 600);
     };
 
     if (!activeCard && !sessionComplete) {
