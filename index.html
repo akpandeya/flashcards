@@ -1583,6 +1583,11 @@
             box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
         }
 
+        /* --- DESKTOP SIDEBAR (Hidden on Mobile) --- */
+        #desktop-sidebar {
+            display: none;
+        }
+
         /* --- MODAL --- */
         #detail-modal {
             display: none;
@@ -1816,7 +1821,7 @@
             }
 
             /* DICTIONARY SPLIT VIEW (Desktop) */
-            #dictionary-screen {
+            #dictionary-screen:not(.hidden) {
                 display: flex !important;
                 flex-direction: row !important;
                 overflow: hidden !important;
@@ -2173,7 +2178,6 @@
                     </div>
                 </div>
             </div>
-        </div>
         </div>
 
         <!-- REVIEW SCREEN -->
