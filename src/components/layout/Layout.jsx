@@ -16,7 +16,7 @@ export function Layout({ children }) {
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 z-50 flex md:hidden">
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-                    <Sidebar className="relative z-10 w-[80%] max-w-xs shadow-2xl" />
+                    <Sidebar className="relative z-10 w-[80%] max-w-xs shadow-2xl" onClose={() => setIsMobileMenuOpen(false)} />
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-white z-20"

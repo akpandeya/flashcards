@@ -17,6 +17,8 @@ export function ReviewSession() {
 
     // Initialize Session
     useEffect(() => {
+        if (queue.length > 0) return; // Don't reset if already playing
+
         const due = words.filter(w => {
             const p = progress[w.id];
             if (!p) return true; // New
@@ -38,16 +40,21 @@ export function ReviewSession() {
         const currentProgress = progress[activeCard.id] || null;
         const nextState = calculateNextState(currentProgress, grade);
 
-        // Save
+        // Update DB
         updateWordProgress(activeCard.id, nextState);
 
-        // Next Card
-        if (currentIndex < queue.length - 1) {
-            setIsFlipped(false);
-            setCurrentIndex(prev => prev + 1);
-        } else {
-            setSessionComplete(true);
-        }
+        // Flip back first
+        setIsFlipped(false);
+
+        // Wait for flip animation (300ms) before changing content
+        setTimeout(() => {
+            // Next Card
+            if (currentIndex < queue.length - 1) {
+                setCurrentIndex(prev => prev + 1);
+            } else {
+                setSessionComplete(true);
+            }
+        }, 300);
     };
 
     if (!activeCard && !sessionComplete) {
