@@ -67,7 +67,7 @@ export function filter(query) {
         filteredWords = list.filter(w => {
             if (!w) return false;
             const front = (w.word || '').toLowerCase();
-            const back = (w.def || '').toLowerCase();
+            const back = (w.translation || w.def || '').toLowerCase();
             const tags = (w.tags || []).join(' ').toLowerCase();
             return front.includes(q) || back.includes(q) || tags.includes(q);
         });
@@ -172,7 +172,7 @@ export function render(append = false) {
                         <span class="dict-pos">${w.pos || ''}</span>
                         ${progBadge}
                     </div>
-                    <div class="dict-back">${w.def || ''}</div>
+                    <div class="dict-back">${w.translation || w.def || ''}</div>
                 </div>
                 <div class="dict-tags">
                     ${tagsHtml}
@@ -282,7 +282,7 @@ export function openDetail(id) {
     if (wordEl) wordEl.innerText = word.word;
 
     const defEl = document.getElementById('detail-def');
-    if (defEl) defEl.innerText = word.def;
+    if (defEl) defEl.innerText = word.translation || word.def;
 
     const notesInput = document.getElementById('detail-notes');
     if (notesInput) notesInput.value = word.notes || '';

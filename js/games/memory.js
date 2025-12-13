@@ -42,7 +42,7 @@ export function startGame(exitCallback) {
     const tiles = [];
     deck.forEach(w => {
         tiles.push({ id: w.id, content: w.word, type: 'word' });
-        tiles.push({ id: w.id, content: w.def, type: 'def' });
+        tiles.push({ id: w.id, content: w.translation || w.def, type: 'def' });
     });
 
     // Shuffle tiles
