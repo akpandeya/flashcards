@@ -8,7 +8,7 @@ export const DashboardLayout = () => {
             <Sidebar />
 
             {/* Main Content - Takes remaining width, Scrollable */}
-            <main className="flex-1 h-full overflow-y-auto p-8 transition-all duration-300">
+            <main className="flex-1 h-full min-w-0 min-h-0 overflow-y-auto p-8 transition-all duration-300">
                 <div className="max-w-7xl mx-auto">
                     <Outlet />
                 </div>
