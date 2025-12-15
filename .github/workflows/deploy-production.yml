@@ -47,6 +47,28 @@ jobs:
           SCRIPT_AFTER: |
             echo "✅ PROD Files Synced to /var/www/lingodrift-prod"
 
+  deploy-backend:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Backend Code via Rsync
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_KEY }}
+          ARGS: "-avzr --delete"
+          REMOTE_HOST: ${{ secrets.OCI_HOST }}
+          REMOTE_USER: ${{ secrets.OCI_USERNAME }}
+          EXCLUDE: "frontend/,_legacy_v1/,node_modules/,.git/"
+          TARGET: "/home/ubuntu/lingodrift-app/"
+          SCRIPT_AFTER: |
+            echo "🐳 Restarting Docker Services..."
+            cd /home/ubuntu/lingodrift-app
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+            echo "✅ Backend Services Deployed"
+
       - name: Update Caddy Configuration & Reload
         uses: easingthemes/ssh-deploy@v5.1.0
         with:
