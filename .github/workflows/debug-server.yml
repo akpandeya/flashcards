@@ -6,6 +6,8 @@ jobs:
   debug-caddy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Server Diagnostics
         uses: easingthemes/ssh-deploy@v5.1.0
         with:
