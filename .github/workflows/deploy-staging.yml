@@ -79,5 +79,10 @@ jobs:
           SCRIPT_AFTER: |
             echo "🌐 Updating Caddy Configuration..."
             sudo mv /home/ubuntu/Caddyfile /etc/caddy/Caddyfile
-            sudo systemctl reload caddy
-            echo "✅ Caddy Reloaded with New Config"
+            
+            echo "📄 Verifying Caddyfile Content:"
+            cat /etc/caddy/Caddyfile
+            
+            echo "🔄 Restarting Caddy..."
+            sudo systemctl restart caddy
+            echo "✅ Caddy Restarted"

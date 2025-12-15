@@ -1,9 +1,8 @@
-{
     # Global options
     email {$ACME_EMAIL}
 }
 
-{$ACME_DOMAIN} {
+staging.lingodrift.com, {$ACME_DOMAIN} {
     # Serve static files from the NEW build directory
     root * /var/www/lingodrift
 
