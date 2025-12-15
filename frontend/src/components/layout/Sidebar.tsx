@@ -7,7 +7,7 @@ export const Sidebar = () => {
     return (
         <div className="h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
-                <img src="/logo.png" alt="LingoDrift Logo" className="w-8 h-8 rounded-lg object-contain" />
+                <img src="/favicon.svg" alt="LingoDrift Logo" className="w-8 h-8 object-contain" />
                 <span className="text-xl font-bold text-gray-900 dark:text-white">LingoDrift</span>
             </div>
 

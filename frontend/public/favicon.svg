@@ -1,0 +1,14 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lingoGrad" x1="0" y1="200" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0891b2" /> <stop offset="1" stop-color="#22d3ee" /> </linearGradient>
+  </defs>
+  
+  <path d="M40 100 C40 60 70 30 110 30 L160 50 L140 140 L100 160 C60 160 40 130 40 100 Z" 
+        fill="url(#lingoGrad)" />
+  
+  <path d="M160 50 L100 100 L140 140" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <path d="M20 130 Q 60 180 120 180" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+  <path d="M10 110 Q 40 150 90 150" stroke="#fb923c" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+</svg>
