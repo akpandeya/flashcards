@@ -30,13 +30,14 @@ mkdir -p /var/www/flashcards-staging
 chown -R ubuntu:ubuntu /var/www/flashcards /var/www/flashcards-staging
 chmod -R 755 /var/www
 
-# 4. Configure Firewall (UFW)
-echo "🛡️ Configuring Firewall..."
-ufw allow OpenSSH
-ufw allow 80
-ufw allow 443
+# 4. Configure# Firewall Setup (The Safe Way)
+echo "🔒 Configuring Firewall..."
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+echo "   Allowing SSH/HTTP/HTTPS..."
 ufw --force enable
-echo "✅ Firewall active."
+echo "✅ Firewall Active (SSH Port 22 Protected)"
 
 # 5. Setup Block Volume (Backup)
 echo "💾 Checking for Backup Volume..."

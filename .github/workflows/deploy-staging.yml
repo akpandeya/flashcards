@@ -31,6 +31,7 @@ jobs:
           EMAIL: ${{ secrets.ACME_EMAIL }}
           DOMAIN: ${{ secrets.ACME_DOMAIN_STAGING }}
         run: |
+          sed -i '1,7d' Caddyfile
           sed -i "s|{\$ACME_EMAIL}|$EMAIL|g" Caddyfile
           sed -i "s|{\$ACME_DOMAIN}|$DOMAIN|g" Caddyfile
           cp Caddyfile dist/
