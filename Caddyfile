@@ -2,7 +2,7 @@
     email {$ACME_EMAIL}
 }
 
-staging.lingodrift.com, {$ACME_DOMAIN} {
+staging.lingodrift.com {
     # Serve static files from the NEW build directory
     root * /var/www/lingodrift
 
