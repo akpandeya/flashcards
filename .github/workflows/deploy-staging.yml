@@ -32,6 +32,7 @@ jobs:
           DOMAIN: ${{ secrets.ACME_DOMAIN_STAGING }}
         run: |
           sed -i '1,7d' Caddyfile
+          sed -i "s|root \* /var/www/flashcards|root \* /var/www/flashcards-staging|g" Caddyfile
           sed -i "s|{\$ACME_EMAIL}|$EMAIL|g" Caddyfile
           sed -i "s|{\$ACME_DOMAIN}|$DOMAIN|g" Caddyfile
           cp Caddyfile dist/
