@@ -1,7 +1,8 @@
 {
-  "name": "v2-react",
+  "name": "lingodrift",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "LingoDrift - Immersive Flashcards",
   "type": "module",
   "scripts": {
     "dev": "vite",

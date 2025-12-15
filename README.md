@@ -1,6 +1,5 @@
-# LingoFlow 🧠
-
-**LingoFlow** is a modern, high-performance flashcard application designed to help you master new languages efficiently. It combines the power of **Spaced Repetition (SRS)** with gamified learning and rich dictionary lookups.
+# LingoDrift 🌊
+A local-first, immersive flashcard app for mastering German vocabulary. It combines the power of **Spaced Repetition (SRS)** with gamified learning and rich dictionary lookups.
 
 Built with **React 19**, **Vite**, and **Tailwind CSS**, it offers a premium, app-like experience directly in the browser.
 

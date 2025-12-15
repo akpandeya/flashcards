@@ -56,3 +56,5 @@ jobs:
             sudo mv /var/www/flashcards-staging/Caddyfile /etc/caddy/flashcards-staging.caddy
             sudo systemctl reload caddy
             echo "✅ Staging Deployment Complete"
+            echo "🚀 NEXT STEP: If this build looks good, promote to Production:"
+            echo "   gh workflow run process-production-release.yml"
