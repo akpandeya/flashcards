@@ -2,15 +2,9 @@ name: Deploy Production (Promote to Live)
 
 on:
   workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type "yes" to confirm deployment to LIVE'
-        required: true
-        default: 'no'
 
 jobs:
   deploy-production:
-    if: github.event.inputs.confirm == 'yes'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -28,6 +22,18 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Prepare Production Directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          script: |
+            echo "🔧 Preparing Production Directory..."
+            sudo mkdir -p /var/www/lingodrift-prod
+            sudo chown -R ubuntu:ubuntu /var/www/lingodrift-prod
+            echo "✅ Directory Ready"
 
       - name: Deploy Frontend to Production Dir
         uses: easingthemes/ssh-deploy@v5.1.0
