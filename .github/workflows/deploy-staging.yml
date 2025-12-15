@@ -36,9 +36,9 @@ jobs:
           # Source is relative to root, so frontend/dist
           SOURCE: "frontend/dist/"
           # Deploy to standard web root (served by Caddy)
-          TARGET: "/var/www/flashcards/"
+          TARGET: "/var/www/lingodrift/"
           SCRIPT_AFTER: |
-            echo "✅ Frontend Files Synced to /var/www/flashcards"
+            echo "✅ Frontend Files Synced to /var/www/lingodrift"
 
   deploy-backend:
     runs-on: ubuntu-latest
