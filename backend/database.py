@@ -5,7 +5,7 @@ import os
 
 # Use Environment Variable or fallback to Docker service name (for local dev)
 # In production, this will be overridden by env vars
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lingo_user:lingo_password@db:5432/lingodrift")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://lingo_user:lingo_password@localhost:5432/lingodrift")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -1,12 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-from .database import engine, Base
-from . import models
+from database import engine, Base
+import models
+import schemas
+import auth
+import database
 
 # Create Tables (in dev mode, we just do this. In prod, we use Alembic)
-models.Base.metadata.create_all(bind=engine)
-models.Base.metadata.create_all(bind=database.engine)
+# Create Tables
+# models.Base.metadata.create_all(bind=engine) # Disabled in favor of Alembic Migrations
 
 app = FastAPI(title="LingoDrift API", version="2.0.0")
 
