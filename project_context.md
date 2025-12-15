@@ -1,9 +1,9 @@
-# Project Context: LingoFlow (Flashcard App)
+# Project Context: LingoDrift (Flashcard App)
 
-**Purpose**: This document provides a technical summary of the "LingoFlow" application to assist an AI model in brainstorming features, improvements, or refactoring strategies.
+**Purpose**: This document provides a technical summary of the "LingoDrift" application to assist an AI model in brainstorming features, improvements, or refactoring strategies.
 
 ## 1. Application Overview
-**Name**: LingoFlow
+**Name**: LingoDrift
 **Type**: Single Page Application (SPA) / Progressive Web App (PWA)
 **Domain**: Language Learning / Flashcards
 **Core Philosophy**: Local-First, Privacy-Focused, High Performance.
