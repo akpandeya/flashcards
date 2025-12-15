@@ -6,7 +6,7 @@ client = TestClient(app)
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Willkommen bei LingoDrift v2 API 🇩🇪"}
+    assert response.json() == {"message": "Hello from LingoDrift Backend API!"}
 
 def test_health():
     response = client.get("/health")
