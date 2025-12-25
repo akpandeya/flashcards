@@ -39,7 +39,7 @@ See `../agentic-workflows/CLAUDE.md` for complete agent documentation and TDD wo
 
 - `../agentic-workflows` - TDD/DDD agent definitions and workflows
 - `../akpandeya.com` - Personal website (may share authentication patterns)
-- `../oracle-infrastructure` - Deployment infrastructure (SSH access required)
+- `../exterminator-infra` - Caddy web server infrastructure (SSH access required)
 
 ## SSH and Git Permissions
 
